@@ -13,8 +13,8 @@ type Fetcher interface {
 
 // Crawl 使用 fetcher 从某个 URL 开始递归的爬取页面，直到达到最大深度。
 func Crawl(url string, depth int, fetcher Fetcher) {
-	// TODO: 并行的抓取 URL。
-	// TODO: 不重复抓取页面。
+	// JOB: 并行的抓取 URL。
+	// JOB: 不重复抓取页面。
 	// 下面并没有实现上面两种情况：
 	// 若深度超过，返回
 	if depth <= 0 {

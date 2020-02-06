@@ -6,7 +6,7 @@ import "io"
 
 type MyReader struct{}
 
-// TODO: 给 MyReader 添加一个 Read([]byte) (int, error) 方法
+// JOB: 给 MyReader 添加一个 Read([]byte) (int, error) 方法
 func (r MyReader) Read(b []byte) (res int, err error) {
 	sum := 0
 	for i := range b {
