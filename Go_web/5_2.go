@@ -58,14 +58,30 @@ func exampleMySQL() {
 	}
 }
 
+func once(Pool *redis.Pool, i int, ch chan bool) {
+	conn := Pool.Get()
+	_, err := conn.Do("lpush", "goods&10000", i)
+	if err != nil {
+		fmt.Println(err)
+	}
+	conn.Close()
+	ch <- true
+}
+
 func exampleRedis() {
 	// Redis
 	// 新建连接池
 	redisHost := ":6379"
 	var Pool *redis.Pool
 	Pool = &redis.Pool{
+		// 高并发必备的两个参数，最优设置（非最大设置）可使速度飞起来
+		// 优化前 1.7s ~ 6.8s 浮动，优化后平均 0.42s
+		// MaxActive 决定最大链接数，保证不超过win的最大链接数
+		// Wait true 时， 开启等待模式： 无可用连接时等待
+		MaxActive: 400,
+		Wait:      true,
 
-		MaxIdle:     3,
+		MaxIdle:     30,
 		IdleTimeout: 240 * time.Second,
 
 		Dial: func() (redis.Conn, error) {
@@ -102,6 +118,34 @@ func exampleRedis() {
 
 	data, err = redis.String(conn.Do("SET", "do", "now"))
 	fmt.Println(data, err)
+
+	c2 := Pool.Get()
+	defer c2.Close()
+	d, err := redis.Int64s(c2.Do("lrange", "goods&10086", "0", "10"))
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(d)
+
+	// 并发测试 插入10000个数据
+	tOri := time.Now()
+	l := make([]int, 10000)
+	ch := make(chan bool, 10000)
+	for i := range l {
+		go once(Pool, i, ch)
+	}
+	k := 0
+	for range ch {
+		if k++; k >= 10000 {
+			break
+		}
+	}
+	d, err = redis.Int64s(c2.Do("lrange", "goods&10000", "0", "10000"))
+	tClo := time.Now()
+	t := tClo.Sub(tOri)
+	fmt.Println(len(d))
+	fmt.Println(t)
+	c2.Do("del", "goods&10000")
 }
 
 func main() {
