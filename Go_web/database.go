@@ -68,6 +68,28 @@ func once(Pool *redis.Pool, i int, ch chan bool) {
 	ch <- true
 }
 
+func concurrencyRedis(c2 redis.Conn, Pool *redis.Pool) {
+	// 并发测试 插入10000个数据
+	tOri := time.Now()
+	l := make([]int, 10000)
+	ch := make(chan bool, 10000)
+	for i := range l {
+		go once(Pool, i, ch)
+	}
+	k := 0
+	for range ch {
+		if k++; k >= 10000 {
+			break
+		}
+	}
+	d, _ := redis.Int64s(c2.Do("lrange", "goods&10000", "0", "10000"))
+	tClo := time.Now()
+	t := tClo.Sub(tOri)
+	fmt.Println(len(d))
+	fmt.Println(t)
+	c2.Do("del", "goods&10000")
+}
+
 func exampleRedis() {
 	// Redis
 	// 新建连接池
@@ -127,25 +149,37 @@ func exampleRedis() {
 	}
 	fmt.Println(d)
 
-	// 并发测试 插入10000个数据
-	tOri := time.Now()
-	l := make([]int, 10000)
-	ch := make(chan bool, 10000)
-	for i := range l {
-		go once(Pool, i, ch)
-	}
-	k := 0
-	for range ch {
-		if k++; k >= 10000 {
-			break
-		}
-	}
-	d, err = redis.Int64s(c2.Do("lrange", "goods&10000", "0", "10000"))
-	tClo := time.Now()
-	t := tClo.Sub(tOri)
-	fmt.Println(len(d))
-	fmt.Println(t)
-	c2.Do("del", "goods&10000")
+	// 并发测试
+	// concurrencyRedis(c2, Pool)
+
+	// 设置过期时间
+	cc := Pool.Get()
+	defer cc.Close()
+	res, err := redis.String(cc.Do("set", "t", time.Now()))
+	fmt.Println(res, err)
+
+	res, err = redis.String(cc.Do("get", "t"))
+	fmt.Println(res, err)
+
+	i, err := redis.Int64(cc.Do("expire", "t", 3))
+	fmt.Println(i, err)
+
+	time.Sleep(time.Second * 1)
+
+	i, err = redis.Int64(cc.Do("ttl", "t"))
+	fmt.Println(i, err)
+
+	i, err = redis.Int64(cc.Do("pttl", "t"))
+	fmt.Println(i, err)
+
+	// 注意 重新设定值会清除先前设定的时间 需要重新设定
+	// res, err = redis.String(cc.Do("set", "t", "sss"))
+	// fmt.Println(res, err)
+
+	time.Sleep(time.Second * 2)
+
+	g, err := redis.String(cc.Do("get", "t"))
+	fmt.Println(g, err)
 }
 
 func main() {
