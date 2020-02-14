@@ -5,7 +5,6 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gomodule/redigo/redis"
-	_ "github.com/gomodule/redigo/redis"
 	"os"
 	"os/signal"
 	"syscall"
