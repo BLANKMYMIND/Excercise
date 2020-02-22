@@ -188,9 +188,20 @@ func main() {
 			})
 		})
 	}
-
 	// 静态服务 与 http 的 fileServer 不同，单 /test 页面不显示
 	router.Static("/test", "./test")
+
+	// 运行时加载路由是允许的
+	//router.GET("/active", func(c *gin.Context) {
+	//	c.String(http.StatusOK, "i am dead.")
+	//})
+	// 但至今没找到运行时删路由的方法...
+	go func() {
+		time.Sleep(6 * time.Second)
+		router.GET("/active", func(c *gin.Context) {
+			c.String(http.StatusOK, "i am alive.")
+		})
+	}()
 
 	router.Run(":8000")
 }

@@ -24,7 +24,7 @@ func main() {
 	// 获取 key
 	b := newKey()
 
-	// 生成 Cliphere (使用 key b 的 aes 加密解密器)
+	// 生成 Cipher (使用 key b 的 aes 加密解密器)
 	c, err := aes.NewCipher(b)
 	if err != nil {
 		panic(err)
